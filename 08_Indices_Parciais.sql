@@ -1,6 +1,8 @@
-CREATE INDEX idx_part_contrato_ativo ON contrato(id_projeto) 
-WHERE data_vencimento >= CURRENT_DATE;
+-- ==========================================
+-- Plano 3
+-- ==========================================
 
+-- Índices parciais para otimizar o acesso a subconjuntos de dados altamente acessados
 CREATE INDEX idx_part_contrato_bolsista ON contrato(id_pesquisador) 
 WHERE tipo_vinculo = 'Bolsista';
 

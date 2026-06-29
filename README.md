@@ -1,69 +1,61 @@
-# Sistema de Gestão de Pesquisa - Documentação do Projeto
+# PRJ10: Sistema de Gerenciamento de Recursos Humanos em Pesquisa
 
-## 1. O Que Fizemos Até Agora
-Ao longo do projeto, modelamos a arquitetura lógica e conceitual do banco de dados para o sistema de Gestão de Pesquisa. As principais evoluções incluem:
-- **Modelagem de Entidades:** Estruturamos os domínios de Pesquisadores, Projetos, Financiadores e Produção Acadêmica.
-- **Otimização de Chaves Primárias (PK):** Substituímos o uso de CPF, CNPJ e DOI como Chaves Primárias por IDs substitutos (ex: `ID_Pesquisador`, `ID_Financiador`). Isso previne travamentos operacionais (*locks*) em cascata (`ON UPDATE CASCADE`) caso ocorram erros de digitação e melhora a performance de `JOIN`s, substituindo grandes campos VARCHAR por inteiros mais leves.
-- **Relacionamentos e Cardinalidades:** - Ajustamos a cardinalidade para refletir que se uma bolsa existe, ela automaticamente já remunera um contrato: `[Bolsa] (1,1) -> <Remunera> -> (0,1) [Contrato]`.
-  - Consolidamos a relação N:N entre Financiador e Projeto transformando a relação *Fomenta* em uma tabela própria na fase DDL, incluindo o atributo essencial `valor_aportado`.
-- **Regras de Negócio:** Definimos travas importantes para conformidade administrativa, como a exclusividade temporal de bolsas (um pesquisador não pode ter duas bolsas ativas simultâneas) e garantimos que Publicações não sejam tratadas como entidades fracas.
+Este repositório contém todos os artefatos SQL para a implementação e operação do banco de dados do projeto PRJ10, desenvolvido para a disciplina MATA60 - Banco de Dados.
 
----
+O projeto foi construído utilizando PostgreSQL e segue uma arquitetura autocontida, onde todas as operações, desde a criação da estrutura até a carga de dados e políticas de segurança, são gerenciadas puramente via SQL, sem dependências de scripts externos.
 
-## 2. Como a Tabela Funciona (Estrutura e Relações)
-O banco de dados foi projetado focando na integridade referencial entre o financiamento e a produção acadêmica. Eis como as entidades se comportam e se conectam:
+## Arquitetura e Ordem de Execução
 
-* **Pesquisador:** A tabela principal que centraliza o cadastro de pessoas (incluindo pesquisadores e bolsistas). Possui seus dados (Nome, E-mail institucional, Titulação, etc.) e usa um `ID_Pesquisador` como PK. Relaciona-se na forma de 1:N com Bolsas e Contratos (um pesquisador pode ter múltiplas bolsas ao longo do tempo).
-* **Projeto:** É o coração do sistema (`ID_Projeto`). Concentra as frentes de trabalho. Ele recebe financiamento (através da tabela *Fomenta*), possui diversas Bolsas e Contratos atrelados (1:N) e é a origem da Produção Acadêmica (1:N para Relatórios e Publicações).
-* **Financiador:** Representa as instituições de fomento (`CNPJ`, `Nome`). Relaciona-se com múltiplos projetos por meio da tabela **Fomenta**.
-* **Bolsa e Contrato:** Representam os vínculos financeiros. Uma `Bolsa` pertence a um `Pesquisador` específico e está diretamente ligada a um `Projeto` (usando as chaves estrangeiras `ID_Pesquisador` e `ID_Projeto`).
-* **Publicação e Relatório (Produção Acadêmica):** Tabelas que rastreiam os resultados gerados por um projeto. Elas guardam a chave estrangeira do projeto de origem (`ID_Projeto`). No caso dos relatórios, a relação das assinaturas de pesquisadores forma uma tabela associativa N:N.
+Para reproduzir o ambiente completo, os scripts devem ser executados na ordem numérica estrita de **01 a 09**. Cada arquivo representa uma camada lógica da arquitetura do banco de dados.
 
----
-
-## 3. Como Conectar ao DBeaver (Passo a Passo)
-O DBeaver atua como nossa principal ferramenta para visualizar e gerenciar as tabelas.
-
-1.  **Abra o DBeaver.**
-2.  No menu superior ou na aba lateral de navegação (*Database Navigator*), clique no ícone de **Nova Conexão** (ícone de tomada com um símbolo de "+").
-3.  Selecione o SGBD escolhido para o projeto (ex: PostgreSQL ou MySQL) e clique em *Next* (Avançar).
-4.  Preencha as configurações da conexão:
-    * **Host:** `localhost` (se o banco estiver rodando localmente).
-    * **Porta:** A porta padrão do banco (ex: `5432` para Postgres, `3306` para MySQL).
-    * **Database:** O nome do banco de dados criado.
-    * **Username / Password:** O seu usuário e senha do banco.
-5.  Clique em **Test Connection** (Testar Conexão). Se as credenciais estiverem corretas, uma janela de sucesso aparecerá.
-6.  Clique em **Finish** (Concluir). A conexão surgirá na aba lateral, bastando expandi-la para acessar as tabelas.
+| Ordem | Arquivo | Propósito |
+|:-----:|---------|-----------|
+| 1 | `01_Tabelas_DDL.sql` | **Estrutura (DDL):** Cria o esquema relacional, tabelas, chaves e restrições. |
+| 2 | `02_Trigger_Regra_Negocio.sql` | **Regra de Negócio:** Implementa uma trigger para garantir a consistência entre projetos, contratos e bolsas. |
+| 3 | `03_DML_Carga_Dados.sql` | **Carga de Dados (DML):** Popula o banco com um grande volume de dados sintéticos gerados via SQL. |
+| 4 | `04_Views_Consultas_Dashboards.sql` | **Camada Analítica:** Cria as `Materialized Views` e as consultas em tempo real para os dashboards. |
+| 5 | `05_Procedures_Telas_Transacoes.sql` | **Camada Operacional:** Define as `Stored Procedures` (lógica de telas) e as transações ACID. |
+| 6 | `06_Indices_Basicos.sql` | **Otimização (Plano 1):** Cria índices básicos em chaves estrangeiras e filtros comuns. |
+| 7 | `07_Indices_Compostos.sql` | **Otimização (Plano 2):** Adiciona índices compostos para otimizar consultas analíticas. |
+| 8 | `08_Indices_Parciais.sql` | **Otimização (Plano 3):** Adiciona índices parciais para otimizar o acesso a subconjuntos de dados. |
+| 9 | `09_Politicas_Acesso.sql` | **Segurança (DCL):** Cria os perfis de acesso (`Roles`) e documenta a política de backup. |
 
 ---
 
-## 4. Como Gerar o Script de Banco de Dados (DDL) no DBeaver
-Para exportar a estrutura final do modelo (CREATE TABLE, FKs, restrições) em formato SQL:
+## Destaques da Implementação (Artefatos da Etapa 2)
 
-1.  No *Database Navigator*, expanda a conexão ativa até encontrar o **esquema** do projeto.
-2.  Clique com o **botão direito** sobre o banco de dados ou o esquema desejado.
-3.  Vá em **Tools** (Ferramentas) > **Generate DDL** (Gerar DDL).
-4.  Na janela que se abrir, confira se todas as entidades (Pesquisador, Projeto, Bolsa, etc.) estão selecionadas.
-5.  Na aba *Output*, configure a pasta onde o arquivo `.sql` será salvo no seu ambiente.
-6.  Clique em **Start** ou *Generate*. O DBeaver criará o script completo.
+Esta entrega implementa rotinas avançadas de banco de dados para atender aos requisitos de sistemas de informação complexos.
+
+### Consultas e Dashboards
+*   **10 Consultas de Dashboard:** Localizadas em `04_Views_Consultas_Dashboards.sql`.
+*   **2 Materialized Views:** Para otimizar consultas analíticas de alto custo, foram criadas:
+    1.  `mv_estrategica_aportes_anuais`: Consolida anualmente os aportes financeiros por tipo (público/privado).
+    2.  `mv_operacional_equidade_incentivos`: Calcula um ranking de valores de bolsa dentro de cada projeto.
+*   **8 Consultas em Tempo Real:** Complementam as MVs com informações que exigem dados atualizados no momento do acesso.
+
+### Rotinas Avançadas e Transações
+*   **2 Stored Procedures:** Localizadas em `05_Procedures_Telas_Transacoes.sql`, representam a lógica de negócio de duas telas operacionais:
+    1.  `sp_promover_voluntario`: Simula a promoção de um pesquisador voluntário para bolsista, realizando múltiplos `INSERT`s e `UPDATE`s.
+    2.  `sp_encerramento_emergencial`: Simula o encerramento administrativo de um projeto, cancelando contratos e registrando um relatório final.
+*   **2 Transações Explícitas:** No mesmo arquivo, as chamadas para as procedures são encapsuladas em blocos `BEGIN/COMMIT`, garantindo a execução atômica (ACID) das operações.
+*   **1 Trigger de Regra de Negócio:** O arquivo `02_Trigger_Regra_Negocio.sql` implementa a `tg_valida_bolsa_contrato`, que impede a inserção de dados inconsistentes na camada de banco de dados, garantindo a integridade lógica do sistema.
+
+### Políticas de Acesso e Segurança
+O arquivo `09_Politicas_Acesso.sql` estabelece uma arquitetura de segurança robusta:
+*   **3 Perfis de Acesso (`Roles`):**
+    *   `admin_pesquisa`: Superusuário com controle total.
+    *   `gestor_rh`: Perfil operacional para gerenciar pesquisadores e contratos, com a restrição de **não poder deletar registros** (`REVOKE DELETE`), preservando o histórico.
+    *   `auditor_financeiro`: Perfil de leitura restrito a dados financeiros e às `Materialized Views` para fins de auditoria.
+*   **Política de Backup:** O arquivo documenta a estratégia de backup lógico utilizando a ferramenta nativa `pg_dump` do PostgreSQL. A automação via `cron` e o uso de formato customizado (`-F c`) são detalhados como boas práticas para um ambiente de produção.
 
 ---
 
-## 5. Como Rodar o Script Python e Gerar os Mocks
-O script Python automatiza a inserção de dados fictícios, mantendo a integridade referencial para testes robustos de software.
+## Instruções para Execução
 
-1.  **Abra o terminal do Ubuntu** diretamente na raiz da pasta do projeto.
-2.  Ative o ambiente virtual para isolar as bibliotecas:
-    ```bash
-    source venv/bin/activate
-    ```
-3.  Instale as dependências listadas (como os drivers do banco ou bibliotecas como `Faker`):
-    ```bash
-    pip install -r requirements.txt
-    ```
-4.  Execute o arquivo Python responsável pelos dados:
-    ```bash
-    python mock_generator.py
-    ```
-    *(Caso o nome do script seja diferente, substitua `mock_generator.py` pelo nome correto no seu diretório).*
-5.  O script conectará ao banco usando as credenciais configuradas, e inserirá as entidades base (Financiador, Pesquisador, Projeto) antes de inserir as dependentes (Bolsas, Publicações), evitando falhas de Foreign Key.
+1.  Crie um banco de dados vazio em uma instância PostgreSQL (ex: `CREATE DATABASE prj10_db;`).
+2.  Conecte-se a este banco de dados.
+3.  Execute os scripts SQL na ordem numérica, de `01_Tabelas_DDL.sql` a `09_Politicas_Acesso.sql`.
+
+O script `03_DML_Carga_Dados.sql` é re-executável e limpará e repovoará o banco de dados sempre que for executado.
+```bash
+pg_dump -U postgres -h localhost -F c -f backup_prj10.dump prj10_db

@@ -1,3 +1,7 @@
+-- ==========================================
+-- Plano 1
+-- ==========================================
+
 -- Índices para otimização de JOINs (Foreign Keys)
 CREATE INDEX idx_contrato_pesquisador ON contrato(id_pesquisador);
 CREATE INDEX idx_contrato_projeto ON contrato(id_projeto);
