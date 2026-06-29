@@ -1,8 +1,6 @@
 # PRJ10: Sistema de Gerenciamento de Recursos Humanos em Pesquisa
 
-Este repositório contém todos os artefatos SQL para a implementação e operação do banco de dados do projeto PRJ10, desenvolvido para a disciplina MATA60 - Banco de Dados.
-
-O projeto foi construído utilizando PostgreSQL e segue uma arquitetura autocontida, onde todas as operações, desde a criação da estrutura até a carga de dados e políticas de segurança, são gerenciadas puramente via SQL, sem dependências de scripts externos.
+Este repositório contém todos os artefatos SQL para a implementação e operação do banco de dados do projeto PRJ10, construído utilizando PostgreSQL, desenvolvido para a disciplina MATA60 - Banco de Dados.
 
 ## Arquitetura e Ordem de Execução
 
@@ -22,9 +20,7 @@ Para reproduzir o ambiente completo, os scripts devem ser executados na ordem nu
 
 ---
 
-## Destaques da Implementação (Artefatos da Etapa 2)
-
-Esta entrega implementa rotinas avançadas de banco de dados para atender aos requisitos de sistemas de informação complexos.
+## Destaques da Implementação (Artefatos do Marco 2)
 
 ### Consultas e Dashboards
 * **10 Consultas de Dashboard:** Localizadas em `04_Views_Consultas_Dashboards.sql`.
@@ -41,7 +37,7 @@ Esta entrega implementa rotinas avançadas de banco de dados para atender aos re
 * **1 Trigger de Regra de Negócio:** O arquivo `02_Trigger_Regra_Negocio.sql` implementa a `tg_valida_bolsa_contrato`, que impede a inserção de dados inconsistentes na camada de banco de dados, garantindo a integridade lógica do sistema.
 
 ### Políticas de Acesso e Segurança
-O arquivo `09_Politicas_Acesso.sql` estabelece uma arquitetura de segurança robusta:
+O arquivo `09_Politicas_Acesso.sql` estabelece uma arquitetura de segurança:
 * **3 Perfis de Acesso (`Roles`):**
     * `admin_pesquisa`: Superusuário com controle total.
     * `gestor_rh`: Perfil operacional para gerenciar pesquisadores e contratos, com a restrição de **não poder deletar registros** (`REVOKE DELETE`), preservando o histórico.
