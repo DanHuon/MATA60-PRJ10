@@ -18,7 +18,7 @@ Para reproduzir o ambiente completo, os scripts devem ser executados na ordem nu
 | 6 | `06_Indices_Basicos.sql` | **Otimização (Plano 1):** Cria índices básicos em chaves estrangeiras e filtros comuns. |
 | 7 | `07_Indices_Compostos.sql` | **Otimização (Plano 2):** Adiciona índices compostos para otimizar consultas analíticas. |
 | 8 | `08_Indices_Parciais.sql` | **Otimização (Plano 3):** Adiciona índices parciais para otimizar o acesso a subconjuntos de dados. |
-| 9 | `09_Politicas_Acesso.sql` | **Segurança (DCL):** Cria os perfis de acesso (`Roles`) e documenta a política de backup. |
+| 9 | `09_Politicas_Acesso.sql` | **Segurança (DCL):** Cria os perfis de acesso (`Roles`) e documenta a política de backup e recuperação. |
 
 ---
 
@@ -27,26 +27,26 @@ Para reproduzir o ambiente completo, os scripts devem ser executados na ordem nu
 Esta entrega implementa rotinas avançadas de banco de dados para atender aos requisitos de sistemas de informação complexos.
 
 ### Consultas e Dashboards
-*   **10 Consultas de Dashboard:** Localizadas em `04_Views_Consultas_Dashboards.sql`.
-*   **2 Materialized Views:** Para otimizar consultas analíticas de alto custo, foram criadas:
+* **10 Consultas de Dashboard:** Localizadas em `04_Views_Consultas_Dashboards.sql`.
+* **2 Materialized Views:** Para otimizar consultas analíticas de alto custo, foram criadas:
     1.  `mv_estrategica_aportes_anuais`: Consolida anualmente os aportes financeiros por tipo (público/privado).
     2.  `mv_operacional_equidade_incentivos`: Calcula um ranking de valores de bolsa dentro de cada projeto.
-*   **8 Consultas em Tempo Real:** Complementam as MVs com informações que exigem dados atualizados no momento do acesso.
+* **8 Consultas em Tempo Real:** Complementam as MVs com informações que exigem dados atualizados no momento do acesso.
 
 ### Rotinas Avançadas e Transações
-*   **2 Stored Procedures:** Localizadas em `05_Procedures_Telas_Transacoes.sql`, representam a lógica de negócio de duas telas operacionais:
+* **2 Stored Procedures:** Localizadas em `05_Procedures_Telas_Transacoes.sql`, representam a lógica de negócio de duas telas operacionais:
     1.  `sp_promover_voluntario`: Simula a promoção de um pesquisador voluntário para bolsista, realizando múltiplos `INSERT`s e `UPDATE`s.
     2.  `sp_encerramento_emergencial`: Simula o encerramento administrativo de um projeto, cancelando contratos e registrando um relatório final.
-*   **2 Transações Explícitas:** No mesmo arquivo, as chamadas para as procedures são encapsuladas em blocos `BEGIN/COMMIT`, garantindo a execução atômica (ACID) das operações.
-*   **1 Trigger de Regra de Negócio:** O arquivo `02_Trigger_Regra_Negocio.sql` implementa a `tg_valida_bolsa_contrato`, que impede a inserção de dados inconsistentes na camada de banco de dados, garantindo a integridade lógica do sistema.
+* **2 Transações Explícitas:** No mesmo arquivo, as chamadas para as procedures são encapsuladas em blocos `BEGIN/COMMIT`, garantindo a execução atômica (ACID) das operações.
+* **1 Trigger de Regra de Negócio:** O arquivo `02_Trigger_Regra_Negocio.sql` implementa a `tg_valida_bolsa_contrato`, que impede a inserção de dados inconsistentes na camada de banco de dados, garantindo a integridade lógica do sistema.
 
 ### Políticas de Acesso e Segurança
 O arquivo `09_Politicas_Acesso.sql` estabelece uma arquitetura de segurança robusta:
-*   **3 Perfis de Acesso (`Roles`):**
-    *   `admin_pesquisa`: Superusuário com controle total.
-    *   `gestor_rh`: Perfil operacional para gerenciar pesquisadores e contratos, com a restrição de **não poder deletar registros** (`REVOKE DELETE`), preservando o histórico.
-    *   `auditor_financeiro`: Perfil de leitura restrito a dados financeiros e às `Materialized Views` para fins de auditoria.
-*   **Política de Backup:** O arquivo documenta a estratégia de backup lógico utilizando a ferramenta nativa `pg_dump` do PostgreSQL. A automação via `cron` e o uso de formato customizado (`-F c`) são detalhados como boas práticas para um ambiente de produção.
+* **3 Perfis de Acesso (`Roles`):**
+    * `admin_pesquisa`: Superusuário com controle total.
+    * `gestor_rh`: Perfil operacional para gerenciar pesquisadores e contratos, com a restrição de **não poder deletar registros** (`REVOKE DELETE`), preservando o histórico.
+    * `auditor_financeiro`: Perfil de leitura restrito a dados financeiros e às `Materialized Views` para fins de auditoria.
+* **Política de Backup e Recuperação:** O arquivo documenta a estratégia de backup lógico utilizando a ferramenta nativa `pg_dump` (formato customizado `-F c` via cronjob). Adicionalmente, estabelece o plano de recuperação de contingência (Disaster Recovery) utilizando o utilitário `pg_restore` com a flag `-1` (Single Transaction), garantindo que as restaurações de dados operem em um bloco transacional estrito e à prova de falhas parciais.
 
 ---
 
@@ -57,5 +57,3 @@ O arquivo `09_Politicas_Acesso.sql` estabelece uma arquitetura de segurança rob
 3.  Execute os scripts SQL na ordem numérica, de `01_Tabelas_DDL.sql` a `09_Politicas_Acesso.sql`.
 
 O script `03_DML_Carga_Dados.sql` é re-executável e limpará e repovoará o banco de dados sempre que for executado.
-```bash
-pg_dump -U postgres -h localhost -F c -f backup_prj10.dump prj10_db
